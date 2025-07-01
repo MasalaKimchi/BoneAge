@@ -1,1 +1,4 @@
-Data/ 
+Data/
+venv/
+baseline_training_log.csv
+baseline_model.h5 

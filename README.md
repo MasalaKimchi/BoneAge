@@ -4,6 +4,41 @@ This project is for bone age assessment using deep learning on hand X-ray images
 
 ---
 
+## Folder Structure Reference
+
+```
+BoneAge/
+├── Data/                  # All data files and subfolders (images, CSVs)
+│   ├── train/             # Training images
+│   ├── validation/        # Validation images
+│   ├── test/              # Test images
+│   ├── validation_CLAHE/  # CLAHE-enhanced validation images (created by script)
+│   ├── test_CLAHE/        # CLAHE-enhanced test images (created by script)
+│   ├── df_train.csv       # Training set metadata
+│   ├── df_val.csv         # Validation set metadata
+│   ├── df_test.csv        # Test set metadata
+│   └── ...                # Other CSVs or data splits
+├── CLAHE_apply_validation.py # Script to apply CLAHE to validation images
+├── CLAHE_apply_test.py       # Script to apply CLAHE to test images
+├── check_nan_in_dfs.py       # Data/image quality check and visualization
+├── train_baseline.py         # Baseline model training script
+├── train_advanced.py         # Advanced/flexible model training script
+├── modeling.py               # Baseline model architecture utilities
+├── modeling_advanced.py      # Advanced model architecture utilities
+├── preprocessing.py          # Image/data preprocessing utilities
+├── requirements.txt          # Python dependencies
+├── README.md                 # Project instructions and documentation
+├── LICENSE                   # License file
+├── best_model.h5             # (Optional) Saved best model weights
+├── baseline_model.h5         # (Optional) Saved baseline model weights
+├── baseline_training_log.csv # (Optional) Training log
+├── modeling_notebook.ipynb   # (Optional) Jupyter notebook for exploration
+├── .gitignore                # Git ignore rules
+└── venv/                     # (Optional) Python virtual environment
+```
+
+---
+
 ## Step-by-Step Instructions
 
 ### 1. **Setup**

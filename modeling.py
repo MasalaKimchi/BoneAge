@@ -379,6 +379,10 @@ def fine_tune(model, lr, metric):
 def plot_history(history):
     '''
     Plots model training history
+    The function generates two plots:
+    (1) Training and validation MAE (Mean Absolute Error)
+    (2) Training and validation Loss
+    These are shown separately to allow for easier comparison of the model's performance on the training and validation sets for both the main metric (MAE) and the loss function.
     '''
     mae = history.history['mae']
     val_mae = history.history['val_mae']
@@ -387,16 +391,18 @@ def plot_history(history):
 
     epochs = range(len(mae))
 
+    plt.figure()
     plt.plot(epochs, mae, 'bo', label='Training MAE')
     plt.plot(epochs, val_mae, 'r', label='Validation MAE')
     plt.title('Training and validation MAE')
+    plt.suptitle('Model Mean Absolute Error (MAE)')
     plt.legend()
 
     plt.figure()
-
     plt.plot(epochs, loss, 'bo', label='Training loss')
     plt.plot(epochs, val_loss, 'r', label='Validation loss')
     plt.title('Training and validation loss')
+    plt.suptitle('Model Loss')
     plt.legend()
 
     plt.show()

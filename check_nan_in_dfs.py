@@ -95,5 +95,34 @@ def main():
     plt.tight_layout()
     plt.show()
 
+    # Display first sample image and CLAHE-enhanced version for train, val, test
+    for df, img_dir, title in [
+        (df_train, train_img_dir, 'Train'),
+        (df_val, val_img_dir, 'Validation'),
+        (df_test, test_img_dir, 'Test')
+    ]:
+        # Get first valid image filename
+        sample_row = df.dropna(subset=['filename']).iloc[0]
+        fname = sample_row['filename']
+        path = os.path.join(img_dir, fname)
+        img = cv2.imread(path, 0)  # Read as grayscale
+        if img is not None:
+            clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(64,64))
+            img_clahe = clahe.apply(img)
+            plt.figure(figsize=(8,4))
+            plt.subplot(1,2,1)
+            plt.imshow(img, cmap='gray')
+            plt.title(f'{title} Original')
+            plt.axis('off')
+            plt.subplot(1,2,2)
+            plt.imshow(img_clahe, cmap='gray')
+            plt.title(f'{title} CLAHE Enhanced')
+            plt.axis('off')
+            plt.suptitle(f'{title} Sample Image: {fname}')
+            plt.tight_layout()
+            plt.show()
+        else:
+            print(f'Could not read image: {path}')
+
 if __name__ == '__main__':
     main() 

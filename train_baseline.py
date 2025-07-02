@@ -21,6 +21,12 @@ df_train, df_val, df_test = pp.prep_dfs(
     test_csv='./Data/df_test.csv'
 )
 
+# Remove NaN cases before creating data generators
+print('Removing NaN cases from dataframes...')
+df_train = df_train.dropna()
+df_val = df_val.dropna()
+df_test = df_test.dropna()
+
 # Compute normalization stats
 df_train['boneage_zscore'] = (df_train['boneage'] - df_train['boneage'].mean()) / df_train['boneage'].std()
 df_val['boneage_zscore'] = (df_val['boneage'] - df_train['boneage'].mean()) / df_train['boneage'].std()
@@ -66,7 +72,7 @@ callbacks = [cb for cb in all_callbacks if cb.__class__.__name__ != 'EarlyStoppi
 # Build model
 print('Building baseline model...')
 baseline_model = mod.baseline_model(img_dims, tf.keras.activations.tanh, optim, ["mae"])
-baseline_model.summary()
+# baseline_model.summary()
 
 # Train model (frozen base)
 print('Training baseline model (frozen base)...')

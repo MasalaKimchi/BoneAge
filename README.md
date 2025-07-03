@@ -144,6 +144,48 @@ BoneAge/
 
 ---
 
+### 5. **Run All Backbones Experiment**
+
+**Script:** `run_all_backbones.py`
+
+- **Purpose:**  
+  This script automates training across all supported backbone architectures using the advanced training script (`train_advanced.py`). It runs each backbone with a fixed set of parameters and saves the results for easy comparison.
+
+- **Parameters used:**
+  - `--epochs_frozen 20` (20 epochs with the backbone frozen)
+  - `--epochs_finetune 0` (no fine-tuning/unfreezing)
+  - `--use_clahe_val_test` (CLAHE applied to validation and test images)
+  - All other parameters use their defaults in `train_advanced.py`.
+
+- **How to use:**
+  1. Make sure your Python virtual environment is set up and activated (see Setup above).
+  2. Run the script from the project root:
+     ```bash
+     python run_all_backbones.py
+     ```
+     (On Windows, you can also double-click the script if file associations are set up.)
+
+- **What happens:**
+  - For each backbone in the project, the script launches `train_advanced.py` with the above parameters.
+  - Results for each backbone are saved as JSON files in the `backbone_results/` directory (e.g., `resnet50_performance.json`).
+  - Each result file contains the best validation MAE, the epoch it was achieved, and the full output log for that run.
+
+- **Example output file:**
+  ```json
+  {
+    "backbone": "resnet50",
+    "best_val_mae": 5.12,
+    "best_epoch": 17,
+    "output": "...full log..."
+  }
+  ```
+
+- **Note:**
+  - By default, this script uses the Python executable from the `venv` virtual environment in the project root. If you are not using a virtual environment, you may need to modify the script accordingly.
+  - You can change the number of epochs or other parameters by editing the variables at the top of `run_all_backbones.py`.
+
+---
+
 ## **How are the advanced scripts different from the originals?**
 
 ### **train_advanced.py vs. train_baseline.py**

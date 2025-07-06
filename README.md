@@ -132,7 +132,7 @@ BoneAge/
   ```
 
 - **Key options:**  
-  - `--backbone`: Choose model backbone (e.g., xception, resnet50, mobilenet, efficientnetb0, etc.)
+  - `--backbone`: Choose model backbone (e.g., xception, resnet50, mobilenet, convnext_tiny, convnext_base, etc.)
   - `--activation`: Activation function for dense layer (e.g., relu, tanh, swish)
   - `--dropout_rate`: Dropout rate after pooling
   - `--dense_units`: Number of units in dense layer
@@ -141,6 +141,13 @@ BoneAge/
   - `--epochs_finetune`: Epochs to train with unfrozen base
   - `--fine_tune`: Enable fine-tuning after initial training
   - `--use_clahe_val_test`: Use CLAHE-enhanced validation and test images
+
+- **Training Output Control:**
+  - The script uses the Keras `fit()` method's `verbose` argument to control training output.
+    - `verbose=2` (default): Shows one line per epoch (recommended for most use cases).
+    - `verbose=1`: Shows a progress bar and per-step output for each epoch.
+    - `verbose=0`: No output during training.
+  - You can modify the `verbose` parameter in the code to suit your preference.
 
 ---
 
@@ -167,6 +174,7 @@ BoneAge/
 
 - **What happens:**
   - For each backbone in the project, the script launches `train_advanced.py` with the above parameters.
+  - **Live Training Progress:** Training progress (epochs, metrics, etc.) is now streamed live to your terminal for each backbone, so you can monitor progress in real time.
   - Results for each backbone are saved as JSON files in the `backbone_results/` directory (e.g., `resnet50_performance.json`).
   - Each result file contains the best validation MAE, the epoch it was achieved, and the full output log for that run.
 
@@ -191,34 +199,32 @@ BoneAge/
 ### **train_advanced.py vs. train_baseline.py**
 - `train_baseline.py` uses a fixed model architecture (Xception backbone, fixed hyperparameters) and is intended as a simple starting point.
 - `train_advanced.py` allows you to:
-  - Select from multiple backbone architectures (Xception, ResNet, MobileNet, EfficientNet, etc.).
+  - Select from multiple backbone architectures (Xception, ResNet, MobileNet, EfficientNet, ConvNeXt, etc.).
   - Customize activation functions, dropout rates, dense layer sizes, and more.
   - Fine-tune the model by unfreezing layers after initial training.
   - Use CLAHE-enhanced validation and test images with a simple flag.
   - Pass all options via command-line arguments for reproducibility and experimentation.
+  - **Control training output verbosity** using the `verbose` parameter in Keras `fit()`.
 
 ### **modeling_advanced.py vs. modeling.py**
 - `modeling.py` contains basic model-building utilities for the baseline model.
 - `modeling_advanced.py` provides:
-  - Support for multiple backbones and more flexible model architectures.
+  - Support for a wide range of backbones (Xception, ResNet, MobileNet, ConvNeXt, etc.) via the `BACKBONE_MAP`.
+  - Flexible model configuration (activation, dropout, dense units, etc.).
   - Improved weight initialization strategies based on activation function.
   - Utility functions for fine-tuning (unfreezing layers), plotting training history, and more.
   - More modular and extensible code for advanced experimentation.
 
 ---
 
+## **Tips**
+- **Controlling Training Output:**
+  - Use `verbose=2` in Keras `fit()` for per-epoch output (recommended for scripts or when running many models).
+  - Use `verbose=1` for a progress bar and per-step output (useful for interactive runs with small datasets).
+  - Use `verbose=0` to suppress all training output.
+- When running `run_all_backbones.py`, you will now see live training progress for each backbone in your terminal.
+
+---
+
 ## **Output Folders**
-- `Data/validation_CLAHE/`: CLAHE-enhanced validation images
-- `Data/test_CLAHE/`: CLAHE-enhanced test images
-
----
-
-## **Troubleshooting**
-- If you see NaN loss/MAE during training, check your data for NaN/Inf values using `check_nan_in_dfs.py`.
-- Ensure all image files referenced in the CSVs exist and are readable.
-- Check that all dependencies are installed (see `requirements.txt`).
-
----
-
-## **License**
-See `LICENSE` for details.
+- `

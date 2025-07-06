@@ -69,9 +69,6 @@ BACKBONE_MAP = {
     'convnext_small': keras.applications.ConvNeXtSmall,
     'convnext_base': keras.applications.ConvNeXtBase,
     'convnext_large': keras.applications.ConvNeXtLarge,
-    'vit_base_patch16_224_in21k': keras.applications.ViTBasePatch16_224_In21k,
-    'vit_large_patch16_224_in21k': keras.applications.ViTLargePatch16_224_In21k,
-    'vit_huge_patch16_224_in21k': keras.applications.ViTHugePatch16_224_In21k,
 }
 
 def baseline_model(img_dims, activation, optim, metric, backbone='xception', weights='imagenet', dropout_rate=0.5, dense_units=500):

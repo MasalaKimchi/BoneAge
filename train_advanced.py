@@ -119,7 +119,8 @@ if __name__ == '__main__':
         validation_data=val_img_inputs,
         validation_steps=step_size_val,
         epochs=args.epochs_frozen,
-        callbacks=callbacks_no_early
+        callbacks=callbacks_no_early,
+        verbose=2
     )
 
     # Fine-tune model (unfreeze some layers)
@@ -156,8 +157,8 @@ if __name__ == '__main__':
             cb.filepath = weights_path
 
     # Save best validation MAE and test MAE to JSON
-    best_val_mae = min(baseline_history2.history['val_mae'])
-    best_epoch = baseline_history2.history['val_mae'].index(best_val_mae) + 1
+    best_val_mae = min(baseline_history1.history['val_mae'])
+    best_epoch = baseline_history1.history['val_mae'].index(best_val_mae) + 1
     print(f'Best validation MAE: {best_val_mae:.4f} at epoch {best_epoch}')
 
     # Load best model weights before evaluating on test set

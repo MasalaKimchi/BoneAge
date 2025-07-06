@@ -2,4 +2,5 @@ Data/
 venv/
 baseline_training_log.csv
 baseline_model.h5
+best_model.h5
 *.h5 

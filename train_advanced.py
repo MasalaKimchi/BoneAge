@@ -5,6 +5,8 @@ import os
 import matplotlib.pyplot as plt
 import csv
 import argparse
+import json
+from datetime import datetime
 
 import preprocessing as pp
 import modeling_advanced as mod
@@ -137,19 +139,43 @@ if __name__ == '__main__':
         )
         mod.plot_history(baseline_history2)
 
-    # Save training history to CSV
-    history = baseline_history2.history if args.fine_tune else baseline_history1.history
-    with open('baseline_training_log.csv', 'w', newline='') as csvfile:
-        writer = csv.writer(csvfile)
-        writer.writerow(['epoch'] + list(history.keys()))
-        for i in range(len(history['loss'])):
-            writer.writerow([i+1] + [history[k][i] for k in history.keys()])
-    print('Training history saved to baseline_training_log.csv')
+    # Ensure backbone_results directory exists
+    os.makedirs('backbone_results', exist_ok=True)
+    # Compose filename based on backbone argument and date
+    backbone_name = args.backbone.lower()
+    date_str = datetime.now().strftime('%Y%m%d')
+    weights_path = os.path.join('backbone_results', f'{backbone_name}_{date_str}.h5')
+    json_path = os.path.join('backbone_results', f'{backbone_name}_{date_str}.json')
 
-    # Print best validation MAE
-    best_val_mae = min(history['val_mae'])
-    best_epoch = history['val_mae'].index(best_val_mae) + 1
+    # Update ModelCheckpoint callback to use the new weights_path
+    for cb in all_callbacks:
+        if cb.__class__.__name__ == 'ModelCheckpoint':
+            cb.filepath = weights_path
+    for cb in callbacks_no_early:
+        if cb.__class__.__name__ == 'ModelCheckpoint':
+            cb.filepath = weights_path
+
+    # Save best validation MAE and test MAE to JSON
+    best_val_mae = min(baseline_history2.history['val_mae'])
+    best_epoch = baseline_history2.history['val_mae'].index(best_val_mae) + 1
     print(f'Best validation MAE: {best_val_mae:.4f} at epoch {best_epoch}')
+
+    # Load best model weights before evaluating on test set
+    print(f'Loading best model weights from {weights_path} for test evaluation...')
+    baseline_model.load_weights(weights_path)
+    test_loss, test_mae = baseline_model.evaluate(test_img_inputs, verbose=1)
+    print(f'Test loss: {test_loss:.4f}, Test MAE: {test_mae:.4f}')
+    # Include all arguments as hyperparameters
+    hyperparameters = vars(args)
+    results = {
+        'best_val_mae': float(best_val_mae),
+        'best_val_epoch': int(best_epoch),
+        'test_mae': float(test_mae),
+        'hyperparameters': hyperparameters
+    }
+    with open(json_path, 'w') as f:
+        json.dump(results, f, indent=2)
+    print(f'Minimal training results saved to {json_path}')
 
     # # Check for NaNs/Infs in validation labels
     # print("NaNs in val:", df_val['boneage_zscore'].isna().sum())

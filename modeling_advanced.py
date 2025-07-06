@@ -65,18 +65,13 @@ BACKBONE_MAP = {
     'mobilenet_v2': keras.applications.MobileNetV2,
     'mobilenet_v3_small': keras.applications.MobileNetV3Small,
     'mobilenet_v3_large': keras.applications.MobileNetV3Large,
-    'efficientnetb0': keras.applications.EfficientNetB0,
-    'efficientnetb1': keras.applications.EfficientNetB1,
-    'efficientnetb2': keras.applications.EfficientNetB2,
-    'efficientnetb3': keras.applications.EfficientNetB3,
-    'efficientnetb4': keras.applications.EfficientNetB4,
-    'efficientnetb5': keras.applications.EfficientNetB5,
-    'efficientnetb6': keras.applications.EfficientNetB6,
-    'efficientnetb7': keras.applications.EfficientNetB7,
     'convnext_tiny': keras.applications.ConvNeXtTiny,
     'convnext_small': keras.applications.ConvNeXtSmall,
     'convnext_base': keras.applications.ConvNeXtBase,
     'convnext_large': keras.applications.ConvNeXtLarge,
+    'vit_base_patch16_224_in21k': keras.applications.ViTBasePatch16_224_In21k,
+    'vit_large_patch16_224_in21k': keras.applications.ViTLargePatch16_224_In21k,
+    'vit_huge_patch16_224_in21k': keras.applications.ViTHugePatch16_224_In21k,
 }
 
 def baseline_model(img_dims, activation, optim, metric, backbone='xception', weights='imagenet', dropout_rate=0.5, dense_units=500):

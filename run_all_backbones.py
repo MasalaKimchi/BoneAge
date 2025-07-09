@@ -5,7 +5,7 @@ import json
 from modeling_advanced import BACKBONE_MAP
 
 # Arguments for train_advanced.py
-EPOCHS_FROZEN = 50
+EPOCHS_FROZEN = 25
 EPOCHS_FINETUNE = 0
 USE_CLAHE = True
 DROPOUT_RATE = 0.3
@@ -34,15 +34,15 @@ for backbone in backbones:
     try:
         proc = subprocess.run(cmd, text=True, check=True)
         output = proc.stdout + proc.stderr
-        # Find the most recent JSON file for this backbone
+        # Find the most recent JSON file for this backbone (with timestamp)
         json_files = [f for f in os.listdir(RESULTS_DIR) if f.startswith(f'{backbone}_') and f.endswith('.json')]
         if not json_files:
             print(f'No result JSON file found for backbone {backbone}!')
             continue
-        # Sort by date in filename (YYYYMMDD)
+        # Sort by timestamp in filename (YYYYMMDD_HHMMSS)
         json_files.sort(reverse=True)
         result_file = os.path.join(RESULTS_DIR, json_files[0])
-        print(f'Results saved to {result_file}')
+        print(f'Results saved to {os.path.abspath(result_file)}')
     except subprocess.CalledProcessError as e:
         print(f'Error running backbone {backbone}:')
         print(e.stdout)

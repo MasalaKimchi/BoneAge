@@ -111,6 +111,20 @@ if __name__ == '__main__':
         dense_units=args.dense_units
     )
 
+    # Compose filename based on backbone argument and date
+    backbone_name = args.backbone.lower()
+    date_str = datetime.now().strftime('%Y%m%d_%H%M%S')
+    weights_path = os.path.join('backbone_results', f'{backbone_name}_{date_str}.h5')
+    json_path = os.path.join('backbone_results', f'{backbone_name}_{date_str}.json')
+
+    # Update ModelCheckpoint callback to use the new weights_path BEFORE training
+    for cb in all_callbacks:
+        if cb.__class__.__name__ == 'ModelCheckpoint':
+            cb.filepath = weights_path
+    for cb in callbacks_no_early:
+        if cb.__class__.__name__ == 'ModelCheckpoint':
+            cb.filepath = weights_path
+
     # Train model (frozen base)
     print('Training baseline model (frozen base)...')
     baseline_history1 = baseline_model.fit(
@@ -142,20 +156,6 @@ if __name__ == '__main__':
 
     # Ensure backbone_results directory exists
     os.makedirs('backbone_results', exist_ok=True)
-    # Compose filename based on backbone argument and date
-    backbone_name = args.backbone.lower()
-    date_str = datetime.now().strftime('%Y%m%d')
-    weights_path = os.path.join('backbone_results', f'{backbone_name}_{date_str}.h5')
-    json_path = os.path.join('backbone_results', f'{backbone_name}_{date_str}.json')
-
-    # Update ModelCheckpoint callback to use the new weights_path
-    for cb in all_callbacks:
-        if cb.__class__.__name__ == 'ModelCheckpoint':
-            cb.filepath = weights_path
-    for cb in callbacks_no_early:
-        if cb.__class__.__name__ == 'ModelCheckpoint':
-            cb.filepath = weights_path
-
     # Save best validation MAE and test MAE to JSON
     best_val_mae = min(baseline_history1.history['val_mae'])
     best_epoch = baseline_history1.history['val_mae'].index(best_val_mae) + 1

@@ -1,0 +1,2 @@
+backbone,single_image_time_ms,single_image_throughput,best_throughput,best_throughput_batch_size,total_parameters,parameters_millions,efficiency_img_per_sec_per_million_params
+xception,35.99,27.78,27.78,1,21886481,21.89,1.27

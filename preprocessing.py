@@ -14,11 +14,6 @@ import cv2
 pixels = 500
 img_size = (pixels, pixels)
 img_dims = (pixels, pixels, 3)
-#batch_size_train = 32
-#batch_size_val = 32
-#seed = 42
-#step_size_train = len(df_train) // batch_size_train
-#step_size_val = len(df_val) // batch_size_val
 
 def prep_dfs(train_csv='df_train.csv', val_csv='df_val.csv', test_csv='df_test.csv'):
     '''
@@ -83,41 +78,9 @@ def boneage_mean_std(df_train, df_val):
     
     return boneage_mean, boneage_std
 
-def mae_months(y_true, y_pred):
-    '''
-    Create custom metric to yield mean absolute error (MAE) in months
-    
-    Parameters
-    ----------
-    y_true: actual bone age
-    y_pred: predicted bone age
-
-    Returns
-    ----------
-    Mean absolute error in months
-    '''
-    return mean_absolute_error((boneage_std*y_true + boneage_mean), (boneage_std*y_pred + boneage_mean))
-
-# Data augmentation
-# To increase robustness of dataset (increase dataset size and variability) for regularization
 def idg(horizontal_flip=False, vertical_flip=False, height_shift_range=0, width_shift_range=0, rotation_range=0, shear_range=0, fill_mode='nearest', zoom_range=0):
     '''
     Instantiates image data generator for augmentation
-    
-    Parameters
-    ----------
-    horizontal_flip: flips images horizontally
-    vertical_flip: flips images vertically
-    height_shift_range: range to shift image vertically
-    width_shift_range: range to shift image horizontally
-    rotation_range: range for rotation of image
-    shear_range: range for shearing of image
-    fill_mode: rule for newly shifted pixels
-    zoom_range: range for zooming in on image
-
-    Returns
-    ----------
-    Image data generator
     '''
     idg = ImageDataGenerator(
         preprocessing_function = preprocess_input,
@@ -130,7 +93,6 @@ def idg(horizontal_flip=False, vertical_flip=False, height_shift_range=0, width_
         fill_mode = fill_mode,
         zoom_range = zoom_range
     )
-    
     return idg
 
 def gen_img_inputs(idg, df, path, batch_size, seed, shuffle, class_mode, target_size, save_to_dir=None):

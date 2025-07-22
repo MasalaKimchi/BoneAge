@@ -1,0 +1,25 @@
+{
+  "best_val_mae": 0.37199482321739197,
+  "best_val_epoch": 53,
+  "test_mae_zscore": 0.36866065859794617,
+  "test_mae_months": 10.354850516173588,
+  "test_correlation": 0.8850758821605341,
+  "hyperparameters": {
+    "lr": 5e-05,
+    "backbone": "resnet152v2",
+    "activation": "tanh",
+    "dropout_rate": 0.5,
+    "dense_units": 500,
+    "gender_units": 32,
+    "weights": "imagenet",
+    "epochs_frozen": 60,
+    "epochs_finetune": 200,
+    "batch_size_train": 64,
+    "batch_size_val": 32,
+    "batch_size_test": 32,
+    "seed": 42,
+    "model_type": "attn_sex",
+    "fine_tune": true,
+    "no_clahe": false
+  }
+}

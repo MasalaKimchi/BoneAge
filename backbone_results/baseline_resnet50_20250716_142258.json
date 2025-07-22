@@ -1,0 +1,23 @@
+{
+  "best_val_mae": 0.7106248736381531,
+  "best_val_epoch": 2,
+  "test_mae": 0.6826499700546265,
+  "hyperparameters": {
+    "lr": 0.0001,
+    "backbone": "resnet50",
+    "activation": "tanh",
+    "dropout_rate": 0.5,
+    "dense_units": 500,
+    "gender_units": 32,
+    "weights": "imagenet",
+    "epochs_frozen": 2,
+    "epochs_finetune": 10,
+    "batch_size_train": 32,
+    "batch_size_val": 16,
+    "batch_size_test": 32,
+    "seed": 42,
+    "model_type": "baseline",
+    "fine_tune": false,
+    "no_clahe": false
+  }
+}

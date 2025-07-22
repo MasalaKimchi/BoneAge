@@ -1,0 +1,5 @@
+---
+description: always use the virtual environment in venv folder before running any python file in the terminal
+globs:
+alwaysApply: false
+---

@@ -348,6 +348,178 @@ def attn_sex_model(img_dims, optim, metric, backbone='xception', weights='imagen
     return model
 
 
+def attn_sex_model_improved(img_dims, optim, metric, backbone='xception', weights='imagenet', dropout_rate=0.5, dense_units=512, gender_units=16):
+    """
+    Builds & compiles an improved attention mechanism model with focused innovations for gender incorporation.
+    
+    This improved version incorporates two key innovations:
+    - Cross-Attention between image and clinical features for better feature interaction
+    - Gated Feature Fusion for adaptive feature combination
+    
+    These focused improvements are based on recent research and provide the most impact
+    while maintaining computational efficiency and preventing overfitting.
+    
+    *Code adapted from:
+    - 'Attention on Pretrained-VGG16 for Bone Age' notebook by K Scott Mader (https://www.kaggle.com/kmader/attention-on-pretrained-vgg16-for-bone-age)
+    - 'KU BDA 2019 boneage project' notebook by Mads Ehrhorn (https://www.kaggle.com/ehrhorn2019/ku-bda-2019-boneage-project)
+    *Model architecture also inspired by: https://www.16bit.ai/blog/ml-and-future-of-radiology
+    
+    Parameters
+    ----------
+    img_dims : tuple
+        Input image dimensions (height, width, channels)
+    optim : keras optimizer
+        Optimizer to use for model compilation
+    metric : list
+        List of metrics for model evaluation
+    backbone : str or callable, default 'xception'
+        Backbone architecture to use. Supported backbones from BACKBONE_MAP.
+        If a callable is provided, it will be used directly.
+    weights : str or None, default 'imagenet'
+        Pretrained weights to use. Set to None for random initialization.
+    dropout_rate : float, default 0.5
+        Dropout rate after pooling
+    dense_units : int, default 512
+        Number of units in the main dense layers
+    gender_units : int, default 16
+        Number of units in the gender processing layer
+
+    Returns
+    -------
+    model : keras.Model
+        Compiled improved attention model with dual inputs (image and gender)
+    """
+    
+    def cross_attention(image_features, clinical_features, num_heads=4):
+        """Cross-attention between image and clinical features"""
+        # Project clinical features to match image feature dimensions
+        clinical_projected = tf.keras.layers.Dense(
+            image_features.shape[-1], activation='relu'
+        )(clinical_features)
+        
+        # Get the number of channels for key_dim calculation
+        channels = image_features.shape[-1]
+        
+        # Apply cross-attention: image features attend to clinical features
+        cross_attended = tf.keras.layers.MultiHeadAttention(
+            num_heads=num_heads, key_dim=channels // num_heads
+        )(image_features, clinical_projected, clinical_projected)
+        
+        # Add residual connection and layer normalization
+        cross_attended = tf.keras.layers.Add()([image_features, cross_attended])
+        cross_attended = tf.keras.layers.LayerNormalization()(cross_attended)
+        
+        return cross_attended
+    
+    def gated_fusion(image_features, clinical_features):
+        """Gated fusion mechanism for adaptive feature combination"""
+        # Project features to same dimension
+        image_proj = tf.keras.layers.Dense(clinical_features.shape[-1])(image_features)
+        
+        # Create gate
+        gate = tf.keras.layers.Dense(clinical_features.shape[-1], activation='sigmoid')(
+            tf.keras.layers.Concatenate()([image_proj, clinical_features])
+        )
+        
+        # Gated fusion
+        fused = gate * image_proj + (1 - gate) * clinical_features
+        return fused
+    
+    # Image input
+    input_img = tf.keras.Input(shape=img_dims)
+
+    # Select backbone
+    if callable(backbone):
+        conv_base = backbone(
+            include_top=False,
+            weights=weights,
+            input_shape=img_dims
+        )
+    elif isinstance(backbone, str):
+        backbone = backbone.lower()
+        if backbone not in BACKBONE_MAP:
+            raise ValueError(f"Unsupported backbone '{backbone}'. Supported: {list(BACKBONE_MAP.keys())}")
+        conv_base = BACKBONE_MAP[backbone](
+            include_top=False,
+            weights=weights,
+            input_shape=img_dims
+        )
+    else:
+        raise ValueError("'backbone' must be a string or a callable Keras application.")
+
+    conv_base.trainable = False  # Freeze base model initially
+
+    # Weight initializers
+    relu_initializer = keras.initializers.HeNormal()
+    swish_initializer = keras.initializers.HeNormal()
+    output_initializer = keras.initializers.GlorotUniform()
+
+    # Extract features from base model
+    base_features = conv_base(input_img)
+    bn_features = tf.keras.layers.BatchNormalization()(base_features)
+
+    # Get depth of base model for later application of attention mechanism
+    base_depth = bn_features.shape[-1]
+
+    # Enhanced attention mechanism with multiple convolutional layers
+    attn_layer = Conv2D(256, kernel_size=(1,1), padding='same',
+                        activation='relu', kernel_initializer=relu_initializer)(bn_features)
+    attn_layer = Conv2D(128, kernel_size=(3,3), padding='same',
+                        activation='relu', kernel_initializer=relu_initializer)(attn_layer)
+    attn_layer = Conv2D(64, kernel_size=(1,1), padding='same',
+                        activation='relu', kernel_initializer=relu_initializer)(attn_layer)
+    attn_layer = Conv2D(16, kernel_size=(1,1), padding='same',
+                        activation='relu', kernel_initializer=relu_initializer)(attn_layer)
+    attn_layer = tf.keras.layers.LocallyConnected2D(1, kernel_size=(1,1), padding='valid',
+                        activation='tanh')(attn_layer)
+
+    # Apply attention to features
+    attn_weights = np.ones((1, 1, 1, base_depth))
+    conv = Conv2D(base_depth, kernel_size=(1,1), padding='same',
+                activation='linear', use_bias=False, weights=[attn_weights])
+    conv.trainable = False  # Freeze weights
+    attn_layer = conv(attn_layer)
+    mask_features = tf.math.multiply(attn_layer, bn_features)  # Create mask
+
+    # Global average pooling
+    gap_features = GlobalAveragePooling2D()(mask_features)
+    gap_mask = GlobalAveragePooling2D()(attn_layer)
+    gap_layer = tf.keras.layers.Lambda(lambda x: x[0]/x[1])([gap_features, gap_mask])  # rescale after pooling
+    gap_layer = Dropout(dropout_rate)(gap_layer)
+    gap_layer = Dense(dense_units, activation='swish', kernel_initializer=swish_initializer)(gap_layer)
+    gap_layer = Dropout(dropout_rate * 0.4)(gap_layer)
+
+    # Enhanced gender processing
+    input_gender = tf.keras.Input(shape=(1,))  # binary variable
+    gender_feature = Dense(gender_units * 2, activation='relu', kernel_initializer=relu_initializer)(input_gender)
+    gender_feature = Dense(gender_units, activation='relu', kernel_initializer=relu_initializer)(gender_feature)
+    gender_feature = Dropout(dropout_rate * 0.3)(gender_feature)
+
+    # INNOVATION 1: Cross-attention between image and clinical features
+    # Reshape image features for cross-attention
+    image_for_cross = tf.keras.layers.Reshape((1, gap_layer.shape[-1]))(gap_layer)
+    clinical_for_cross = tf.keras.layers.Reshape((1, gender_feature.shape[-1]))(gender_feature)
+    
+    # Apply cross-attention
+    cross_attended_image = cross_attention(image_for_cross, clinical_for_cross, num_heads=4)
+    cross_attended_image = tf.keras.layers.Flatten()(cross_attended_image)
+
+    # INNOVATION 2: Gated fusion of features
+    fused_features = gated_fusion(cross_attended_image, gender_feature)
+
+    # Additional dense layers for final prediction
+    combined = Dense(dense_units, activation='relu', kernel_initializer=relu_initializer)(fused_features)
+    combined = Dense(dense_units // 2, activation='relu', kernel_initializer=relu_initializer)(combined)
+    combined = Dropout(dropout_rate * 0.4)(combined)
+    combined = Dense(1, activation='linear', kernel_initializer=output_initializer)(combined)  # 1 output for regression
+
+    # Instantiate & compile model
+    model = tf.keras.Model(inputs=[input_img, input_gender], outputs=combined)
+    model.compile(loss='mean_absolute_error', optimizer=optim, metrics=metric)
+
+    return model
+
+
 def unfreeze_backbone_layers(model, n_layers=2):
     """
     Unfreezes the last n_layers of the backbone (first layer) in a Sequential model for fine-tuning.

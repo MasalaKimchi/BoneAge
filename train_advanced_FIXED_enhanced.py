@@ -12,214 +12,24 @@ import preprocessing_enhanced as pp
 import modeling_advanced as mod
 from modeling import callbacks
 
-
-class CyclicalLearningRate(tf.keras.callbacks.Callback):
-    """
-    Cyclical Learning Rate callback that cycles the learning rate between two boundaries.
-    
-    Based on the paper "Cyclical Learning Rates for Training Neural Networks" by Leslie N. Smith.
-    Implements triangular policy by default.
-    """
-    
-    def __init__(self, base_lr=1e-4, max_lr=1e-2, step_size=2000, mode='triangular', gamma=1.0):
-        super(CyclicalLearningRate, self).__init__()
-        self.base_lr = base_lr
-        self.max_lr = max_lr
-        self.step_size = step_size
-        self.mode = mode
-        self.gamma = gamma
-        self.clr_iterations = 0
-        self.trn_iterations = 0
-        self.history = {}
-        self._reset()
-        
-    def _reset(self, new_base_lr=None, new_max_lr=None, new_step_size=None):
-        """Resets cycle iterations.
-        Optional boundary/step size adjustment.
-        """
-        if new_base_lr != None:
-            self.base_lr = new_base_lr
-        if new_max_lr != None:
-            self.max_lr = new_max_lr
-        if new_step_size != None:
-            self.step_size = new_step_size
-        self.clr_iterations = 0
-        
-    def clr(self):
-        cycle = np.floor(1 + self.clr_iterations / (2 * self.step_size))
-        x = np.abs(self.clr_iterations / self.step_size - 2 * cycle + 1)
-        
-        if self.mode == 'triangular':
-            return self.base_lr + (self.max_lr - self.base_lr) * np.maximum(0, (1 - x))
-        elif self.mode == 'triangular2':
-            return self.base_lr + (self.max_lr - self.base_lr) * np.maximum(0, (1 - x)) / float(2 ** (cycle - 1))
-        elif self.mode == 'exp_range':
-            return self.base_lr + (self.max_lr - self.base_lr) * np.maximum(0, (1 - x)) * (self.gamma ** self.clr_iterations)
-            
-    def on_train_begin(self, logs={}):
-        logs = logs or {}
-        if self.clr_iterations == 0:
-            tf.keras.backend.set_value(self.model.optimizer.lr, self.base_lr)
-        else:
-            tf.keras.backend.set_value(self.model.optimizer.lr, self.clr())
-            
-    def on_batch_end(self, epoch, logs=None):
-        logs = logs or {}
-        self.trn_iterations += 1
-        self.clr_iterations += 1
-        
-        tf.keras.backend.set_value(self.model.optimizer.lr, self.clr())
-        
-        self.history.setdefault('lr', []).append(tf.keras.backend.get_value(self.model.optimizer.lr))
-        self.history.setdefault('iterations', []).append(self.trn_iterations)
-        
-        for k, v in logs.items():
-            self.history.setdefault(k, []).append(v)
+# Import utilities from the new util package
+from util import (
+    CyclicalLearningRate,
+    get_loss_function,
+    create_dual_input_generator_enhanced,
+    create_enhanced_generator,
+    create_fresh_test_generator,
+    test_time_augmentation
+)
 
 
-# Enhanced Loss Functions
-def huber_loss(delta=1.0):
-    """Huber loss function for robust regression."""
-    def loss(y_true, y_pred):
-        residual = tf.abs(y_true - y_pred)
-        condition = tf.less(residual, delta)
-        small_res = 0.5 * tf.square(residual)
-        large_res = delta * residual - 0.5 * tf.square(delta)
-        return tf.where(condition, small_res, large_res)
-    return loss
-
-def smooth_l1_loss(sigma=1.0):
-    """Smooth L1 loss function."""
-    def loss(y_true, y_pred):
-        sigma_squared = sigma ** 2
-        regression_diff = y_true - y_pred
-        regression_loss = tf.where(
-            tf.less(tf.abs(regression_diff), 1.0 / sigma_squared),
-            0.5 * sigma_squared * tf.pow(regression_diff, 2),
-            tf.abs(regression_diff) - 0.5 / sigma_squared
-        )
-        return regression_loss
-    return loss
-
-def wing_loss(w=10.0, epsilon=2.0):
-    """Wing loss for robust regression."""
-    def loss(y_true, y_pred):
-        diff = tf.abs(y_true - y_pred)
-        C = w - w * tf.math.log(1 + w / epsilon)
-        loss_val = tf.where(
-            diff < w,
-            w * tf.math.log(1 + diff / epsilon),
-            diff - C
-        )
-        return loss_val
-    return loss
-
-    
-def get_loss_function(loss_type, **kwargs):
-    """Get the specified loss function."""
-    if loss_type == 'mae':
-        return 'mean_absolute_error'
-    elif loss_type == 'mse':
-        return 'mean_squared_error'
-    elif loss_type == 'huber':
-        delta = kwargs.get('huber_delta', 1.0)
-        return huber_loss(delta=delta)
-    elif loss_type == 'smooth_l1':
-        sigma = kwargs.get('smooth_l1_sigma', 1.0)
-        return smooth_l1_loss(sigma=sigma)
-    elif loss_type == 'wing':
-        w = kwargs.get('wing_w', 10.0)
-        epsilon = kwargs.get('wing_epsilon', 2.0)
-        return wing_loss(w=w, epsilon=epsilon)
-    else:
-        raise ValueError(f"Unknown loss type: {loss_type}")
+# CyclicalLearningRate class moved to util.cyclical_lr module
 
 
-# Data Augmentation Utilities
-def mixup(x, y, alpha=0.2):
-    """Mixup data augmentation for regression."""
-    if alpha > 0:
-        lam = np.random.beta(alpha, alpha)
-    else:
-        lam = 1
-    
-    batch_size = tf.shape(x)[0]
-    index = tf.random.shuffle(tf.range(batch_size))
-    
-    mixed_x = lam * x + (1 - lam) * tf.gather(x, index)
-    mixed_y = lam * y + (1 - lam) * tf.gather(y, index)
-    
-    return mixed_x, mixed_y
+# Enhanced loss functions moved to util.loss_functions module
 
-class MixupCallback(tf.keras.callbacks.Callback):
-    """Callback for applying mixup augmentation during training."""
-    
-    def __init__(self, alpha=0.2):
-        super(MixupCallback, self).__init__()
-        self.alpha = alpha
-    
-    def on_batch_begin(self, batch, logs=None):
-        # Note: This is a simplified implementation
-        # In practice, mixup should be integrated into the data generator
-        pass
 
-# Label Noise Functions
-def add_gaussian_noise_to_labels(labels, noise_std=0.01):
-    """Add small Gaussian noise to labels for regularization."""
-    noise = tf.random.normal(tf.shape(labels), mean=0.0, stddev=noise_std)
-    return labels + noise
-
-def create_dual_input_generator_enhanced(img_generator, gender_data, batch_size, 
-                                       label_noise_std=0.0, mixup_alpha=0.0):
-    """
-    Enhanced generator that yields both image and gender data for dual-input models.
-    Includes label noise and mixup augmentation options.
-    """
-    gender_idx = 0
-    for img_batch, label_batch in img_generator:
-        # Get corresponding gender batch
-        current_batch_size = img_batch.shape[0]
-        gender_batch = gender_data[gender_idx:gender_idx + current_batch_size]
-        gender_idx = (gender_idx + current_batch_size) % len(gender_data)
-        
-        # Add label noise if specified
-        if label_noise_std > 0:
-            label_batch = add_gaussian_noise_to_labels(label_batch, label_noise_std)
-        
-        # Apply mixup if specified
-        if mixup_alpha > 0:
-            img_batch, label_batch = mixup([img_batch, gender_batch], label_batch, mixup_alpha)
-            gender_batch = img_batch[1]
-            img_batch = img_batch[0]
-        
-        yield [img_batch, gender_batch], label_batch
-
-def create_enhanced_generator(img_generator, batch_size, label_noise_std=0.0, mixup_alpha=0.0):
-    """
-    Enhanced generator for baseline models with augmentation options.
-    """
-    for img_batch, label_batch in img_generator:
-        # Add label noise if specified
-        if label_noise_std > 0:
-            label_batch = add_gaussian_noise_to_labels(label_batch, label_noise_std)
-        
-        # Apply mixup if specified
-        if mixup_alpha > 0:
-            img_batch, label_batch = mixup(img_batch, label_batch, mixup_alpha)
-        
-        yield img_batch, label_batch
-
-def create_fresh_test_generator(df, img_path, gender_data, batch_size, seed, img_size, model_type):
-    """
-    Create a fresh test generator - fixes the generator exhaustion bug.
-    """
-    test_idg = pp.idg_enhanced()
-    test_img_inputs = pp.gen_img_inputs(test_idg, df, img_path, batch_size, seed, False, 'raw', img_size)
-    
-    if model_type in ['sex', 'attn_sex']:
-        return create_dual_input_generator_enhanced(test_img_inputs, gender_data, batch_size)
-    else:
-        return test_img_inputs
+# Data augmentation utilities moved to util.augmentation module
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train advanced baseline model with flexible options.')
@@ -283,18 +93,7 @@ def parse_args():
 
     return parser.parse_args()
 
-def test_time_augmentation(model, test_data, steps, tta_steps=5):
-    """Perform Test Time Augmentation for better predictions."""
-    predictions_list = []
-    
-    for i in range(tta_steps):
-        print(f'TTA step {i+1}/{tta_steps}')
-        predictions = model.predict(test_data, steps=steps, verbose=0)
-        predictions_list.append(predictions)
-    
-    # Average all predictions
-    final_predictions = np.mean(predictions_list, axis=0)
-    return final_predictions
+# Test Time Augmentation function moved to util.tta module
 
 if __name__ == '__main__':
     args = parse_args()

@@ -11,13 +11,19 @@ import numpy as np
 import pandas as pd
 import time
 import os
+import sys
 import argparse
 from datetime import datetime
 import gc
 import psutil
 import subprocess
 
-# Import local modules
+# Ensure project root is on sys.path so we can import modeling_advanced
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if PROJECT_ROOT not in sys.path:
+    sys.path.append(PROJECT_ROOT)
+
+# Import local modules from project root
 import modeling_advanced as mod
 
 
@@ -292,7 +298,7 @@ if __name__ == '__main__':
     if csv_filename:
         print(f"\n✅ Inference speed measurement completed!")
         print(f"📄 Results saved to: {csv_filename}")
-        print(f"\n💡 To run specific backbones: python compute_inference_speed.py --backbones xception resnet50")
-        print(f"💡 To test different batch sizes: python compute_inference_speed.py --batch_sizes 1 8 16")
+        print(f"\n💡 To run specific backbones: python -m inference_speed.compute_inference_speed --backbones xception resnet50")
+        print(f"💡 To test different batch sizes: python -m inference_speed.compute_inference_speed --batch_sizes 1 8 16")
     else:
         print("❌ Inference speed measurement failed!") 

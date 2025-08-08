@@ -10,8 +10,15 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 import os
+import sys
 import argparse
 from pathlib import Path
+
+# Ensure project root is on sys.path
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if PROJECT_ROOT not in sys.path:
+    sys.path.append(PROJECT_ROOT)
+
 
 def load_latest_results(results_dir='inference_results'):
     """Load the most recent inference speed results."""
@@ -35,6 +42,7 @@ def load_latest_results(results_dir='inference_results'):
     except Exception as e:
         print(f"Error loading CSV file: {e}")
         return None
+
 
 def create_summary_table(df):
     """Create a summary table of inference speeds."""
@@ -72,6 +80,7 @@ def create_summary_table(df):
     
     for i, (_, row) in enumerate(efficient_sorted.head(5).iterrows()):
         print(f"{i+1}. {row['backbone']}: {row['efficiency']:.2f} img/s/M params")
+
 
 def plot_inference_speeds(df, save_plots=False):
     """Create visualization plots for inference speeds."""
@@ -163,6 +172,7 @@ def plot_inference_speeds(df, save_plots=False):
     
     plt.show()
 
+
 def create_comparison_csv(df, output_file='inference_results/speed_comparison.csv'):
     """Create a simplified comparison CSV for easy sharing."""
     
@@ -201,6 +211,7 @@ def create_comparison_csv(df, output_file='inference_results/speed_comparison.cs
     print(f"\n📄 Comparison CSV saved to: {output_file}")
     
     return comparison_df
+
 
 def main():
     parser = argparse.ArgumentParser(description='Analyze inference speed results')

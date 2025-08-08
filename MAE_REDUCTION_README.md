@@ -1,6 +1,6 @@
 # MAE Reduction Strategies for Bone Age Estimation
 
-This document provides a comprehensive guide to reducing Mean Absolute Error (MAE) in bone age estimation using the enhanced training script `train_advanced_kjc_enhanced.py`.
+This document provides a comprehensive guide to reducing Mean Absolute Error (MAE) in bone age estimation using the enhanced training script `train_advanced_FIXED_enhanced.py`.
 
 ## Overview
 
